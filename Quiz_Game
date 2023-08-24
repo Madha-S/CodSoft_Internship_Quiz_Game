@@ -1,0 +1,256 @@
+from tkinter import *
+import random
+import pathlib
+import tomli
+
+NUM_QUESTIONS_PER_QUIZ = 5
+QUESTIONS_PATH = pathlib.Path(__file__).parent / "questions.toml"
+
+class QuizGUI:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Python Quiz Game")
+        self.root.geometry("750x550")
+
+        self.title = Label(
+            root,
+            text="Python Quiz Game By Madha",
+            width=40,
+            bg="white",
+            fg="blue",
+            font=("calibri", 20, "bold"),
+        )
+        self.title.place(x=5, y=2)
+
+        self.start_button = Button(
+            root,
+            text="Start Quiz",
+            command=self.show_game_options,
+            font=("calibri", 20),
+            bg="white",
+            fg="pink",
+        )
+        self.start_button.place(x=300, y=250)
+
+        self.hint_labels = []
+        self.explanation_labels = []
+        self.result_labels = []
+        self.option_buttons = []
+        self.play_again_button = None
+        self.quit_button = None
+        self.hint_button = None
+        self.explanation_button = None
+
+    def show_game_options(self):
+        self.title.destroy()
+        self.start_button.destroy()
+
+        self.game_choice_label = Label(
+            self.root,
+            text="Select a game or Quit:",
+            font=("calibri", 16),
+        )
+        self.game_choice_label.place(x=250, y=200)
+
+        self.capitals_button = Button(
+            self.root,
+            text="Capitals",
+            command=lambda: self.init_game("capitals"),
+            font=("calibri", 14),
+            bg="green",
+            fg="white",
+        )
+        self.capitals_button.place(x=250, y=250)
+
+        self.python_button = Button(
+            self.root,
+            text="Python",
+            command=lambda: self.init_game("python"),
+            font=("calibri", 14),
+            bg="blue",
+            fg="white",
+        )
+        self.python_button.place(x=350, y=250)
+
+        self.facts_button = Button(
+            self.root,
+            text="Facts",
+            command=lambda: self.init_game("facts"),
+            font=("calibri", 14),
+            bg="purple",
+            fg="white",
+        )
+        self.facts_button.place(x=450, y=250)
+
+    def init_game(self, game_choice):
+        self.clear_ui()
+        self.game_choice_label.destroy()
+        self.facts_button.destroy()
+        self.capitals_button.destroy()
+        self.python_button.destroy()
+
+        self.current_game = game_choice
+        self.questions = self.prepare_questions(QUESTIONS_PATH, game_choice)
+        self.num_correct = 0
+        self.current_question_index = 0
+        self.ask_question()
+
+    def prepare_questions(self, path, game_choice):
+        topic_info = tomli.loads(path.read_text(encoding='utf-8'))
+        questions = topic_info.get(game_choice, {}).get("questions", [])
+        num_questions = min(NUM_QUESTIONS_PER_QUIZ, len(questions))
+        return random.sample(questions, k=num_questions)
+
+    def ask_question(self):
+        self.clear_ui()
+
+        if self.current_question_index < len(self.questions):
+            question = self.questions[self.current_question_index]
+            self.current_question_index += 1
+
+            self.question_label = Label(
+                self.root,
+                text=question["question"],
+                font=("calibri", 14),
+                wraplength=600,
+            )
+            self.question_label.place(x=50, y=80)
+
+            options = question["answers"] + question["alternatives"]
+            random.shuffle(options)
+            y_position = 150
+            for label, option in enumerate(options, start=1):
+                button = Button(
+                    self.root,
+                    text=f"{label}. {option}",
+                    command=lambda a=option: self.check_answer(a),
+                    font=("calibri", 14),
+                    bg="lightblue",
+                    fg="black",
+                )
+                button.place(x=50, y=y_position)
+                self.option_buttons.append(button)
+                y_position += 45
+
+            if "hint" in question:
+                self.hint_button = Button(
+                    self.root,
+                    text="Hint",
+                    command=lambda: self.show_hint(question["hint"]),
+                    font=("calibri", 12),
+                    bg="yellow",
+                    fg="black",
+                )
+                self.hint_button.place(x=50, y=y_position)
+                y_position += 45
+
+            if "explanation" in question:
+                self.explanation_button = Button(
+                    self.root,
+                    text="Explanation",
+                    command=lambda: self.show_explanation(question["explanation"]),
+                    font=("calibri", 12),
+                    bg="orange",
+                    fg="black",
+                )
+                self.explanation_button.place(x=50, y=y_position)
+
+        else:
+            self.show_results()
+
+    def check_answer(self, selected_answer):
+        correct_answers = self.questions[self.current_question_index - 1]["answers"]
+        if selected_answer in correct_answers:
+            self.num_correct += 1
+
+        self.ask_question()
+
+    def show_hint(self, hint):
+        hint_label = Label(
+            self.root,
+            text=hint,
+            font=("calibri", 12),
+            wraplength=600,
+            bg="lightyellow",
+        )
+        hint_label.place(x=100, y=333)
+        self.hint_labels.append(hint_label)
+
+    def show_explanation(self, explanation):
+        explanation_label = Label(
+            self.root,
+            text=explanation,
+            font=("calibri", 12),
+            wraplength=600,
+            bg="orange",
+        )
+        explanation_label.place(x=150, y=375)
+        self.explanation_labels.append(explanation_label)
+
+    def clear_ui(self):
+        if hasattr(self, "question_label"):
+            self.question_label.destroy()
+        for button in getattr(self, "option_buttons", []):
+            button.destroy()
+        for label in getattr(self, "hint_labels", []):
+            label.destroy()
+        for label in getattr(self, "explanation_labels", []):
+            label.destroy()
+        self.hint_labels.clear()
+        self.explanation_labels.clear()
+
+    def show_results(self):
+        self.clear_ui()
+
+        result_label = Label(
+            self.root,
+            text=f"You got {self.num_correct} correct out of {len(self.questions)} questions",
+            font=("calibri", 14),
+        )
+        result_label.place(x=100, y=200)
+        self.result_labels.append(result_label)
+
+        # Create Play Again button only if it doesn't exist
+        if not self.play_again_button:
+            self.play_again_button = Button(
+                self.root,
+                text="Play Again",
+                command=self.restart_quiz,
+                font=("calibri", 14),
+                bg="orange",
+                fg="white",
+            )
+            self.play_again_button.place(x=400, y=350)
+
+        # Create Quit button only if it doesn't exist
+        if not self.quit_button:
+            self.quit_button = Button(
+                self.root,
+                text="Quit",
+                command=self.root.quit,
+                font=("calibri", 14),
+                bg="red",
+                fg="white",
+            )
+            self.quit_button.place(x=500, y=350)
+
+    def restart_quiz(self):
+        self.clear_ui()  # Clear UI elements
+        for label in self.result_labels:  # Clear result labels
+            label.destroy()
+        self.result_labels.clear()  # Clear the result labels list
+        self.show_game_options()  # Show game options again
+        # Destroy Play Again button if it exists
+        if self.play_again_button:
+            self.play_again_button.destroy()
+            self.play_again_button = None
+
+        # Destroy Quit button if it exists
+        if self.quit_button:
+            self.quit_button.destroy()
+            self.quit_button = None
+
+if __name__ == "__main__":
+    root = Tk()
+    app = QuizGUI(root)
+    root.mainloop()
