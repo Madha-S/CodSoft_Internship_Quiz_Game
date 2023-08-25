@@ -22,6 +22,21 @@ class QuizGUI:
         )
         self.title.place(x=5, y=2)
 
+        self.user_name = StringVar()  # Variable to store the user's name
+
+        # Create a label and an entry widget to get the user's name
+        self.name_label = Label(
+            root,
+            text="Enter your name:",
+            font=("calibri", 16),
+        )
+        self.name_label.place(x=250, y=200)
+
+        self.name_entry = Entry(root, textvariable=self.user_name, font=("calibri", 14))
+        self.name_entry.place(x=250, y=250)
+
+        self.welcome_label = None  # Placeholder for the welcome label
+
         self.start_button = Button(
             root,
             text="Start Quiz",
@@ -30,18 +45,28 @@ class QuizGUI:
             bg="white",
             fg="pink",
         )
-        self.start_button.place(x=300, y=250)
+        self.start_button.place(x=300, y=300)
 
         self.hint_labels = []
-        self.explanation_labels = []
         self.result_labels = []
         self.option_buttons = []
         self.play_again_button = None
         self.quit_button = None
         self.hint_button = None
-        self.explanation_button = None
 
     def show_game_options(self):
+        user_name = self.user_name.get()  # Get the user's name from the entry
+        self.name_label.destroy()
+        self.name_entry.destroy()
+
+        # Display a welcome message using the user's name
+        self.welcome_label = Label(
+            self.root,
+            text=f"Welcome, {user_name}!",
+            font=("calibri", 16),
+        )
+        self.welcome_label.place(x=250, y=200)
+
         self.title.destroy()
         self.start_button.destroy()
 
@@ -50,7 +75,7 @@ class QuizGUI:
             text="Select a game or Quit:",
             font=("calibri", 16),
         )
-        self.game_choice_label.place(x=250, y=200)
+        self.game_choice_label.place(x=250, y=250)
 
         self.capitals_button = Button(
             self.root,
@@ -60,7 +85,7 @@ class QuizGUI:
             bg="green",
             fg="white",
         )
-        self.capitals_button.place(x=250, y=250)
+        self.capitals_button.place(x=250, y=300)
 
         self.python_button = Button(
             self.root,
@@ -70,7 +95,7 @@ class QuizGUI:
             bg="blue",
             fg="white",
         )
-        self.python_button.place(x=350, y=250)
+        self.python_button.place(x=350, y=300)
 
         self.facts_button = Button(
             self.root,
@@ -80,7 +105,7 @@ class QuizGUI:
             bg="purple",
             fg="white",
         )
-        self.facts_button.place(x=450, y=250)
+        self.facts_button.place(x=450, y=300)
 
     def init_game(self, game_choice):
         self.clear_ui()
@@ -88,6 +113,7 @@ class QuizGUI:
         self.facts_button.destroy()
         self.capitals_button.destroy()
         self.python_button.destroy()
+        self.welcome_label.destroy()
 
         self.current_game = game_choice
         self.questions = self.prepare_questions(QUESTIONS_PATH, game_choice)
@@ -143,19 +169,7 @@ class QuizGUI:
                 )
                 self.hint_button.place(x=50, y=y_position)
                 y_position += 45
-
-            if "explanation" in question:
-                self.explanation_button = Button(
-                    self.root,
-                    text="Explanation",
-                    command=lambda: self.show_explanation(question["explanation"]),
-                    font=("calibri", 12),
-                    bg="orange",
-                    fg="black",
-                )
-                self.explanation_button.place(x=50, y=y_position)
-
-        else:
+        else: 
             self.show_results()
 
     def check_answer(self, selected_answer):
@@ -176,17 +190,6 @@ class QuizGUI:
         hint_label.place(x=100, y=333)
         self.hint_labels.append(hint_label)
 
-    def show_explanation(self, explanation):
-        explanation_label = Label(
-            self.root,
-            text=explanation,
-            font=("calibri", 12),
-            wraplength=600,
-            bg="orange",
-        )
-        explanation_label.place(x=150, y=375)
-        self.explanation_labels.append(explanation_label)
-
     def clear_ui(self):
         if hasattr(self, "question_label"):
             self.question_label.destroy()
@@ -194,10 +197,11 @@ class QuizGUI:
             button.destroy()
         for label in getattr(self, "hint_labels", []):
             label.destroy()
-        for label in getattr(self, "explanation_labels", []):
-            label.destroy()
         self.hint_labels.clear()
-        self.explanation_labels.clear()
+        # Destroy Hint button if it exists
+        if self.hint_button:
+            self.hint_button.destroy()
+            self.hint_button = None
 
     def show_results(self):
         self.clear_ui()
@@ -249,6 +253,10 @@ class QuizGUI:
         if self.quit_button:
             self.quit_button.destroy()
             self.quit_button = None
+        # Destroy Hint button if it exists
+        if self.hint_button:
+            self.hint_button.destroy()
+            self.hint_button = None
 
 if __name__ == "__main__":
     root = Tk()
